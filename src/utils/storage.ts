@@ -1,4 +1,5 @@
 import { Prospect, SalesScript, Transaction, Task, Goal } from '../types';
+import { CalendarEvent } from '../types';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -6,7 +7,8 @@ const STORAGE_KEYS = {
   SCRIPTS: 'tourify_scripts',
   TRANSACTIONS: 'tourify_transactions',
   TASKS: 'tourify_tasks',
-  GOALS: 'tourify_goals'
+  GOALS: 'tourify_goals',
+  CALENDAR_EVENTS: 'tourify_calendar_events'
 };
 
 // Generic storage functions
@@ -34,3 +36,23 @@ export const setTasks = (tasks: Task[]): void => setStorageData(STORAGE_KEYS.TAS
 
 export const getGoals = (): Goal[] => getStorageData<Goal>(STORAGE_KEYS.GOALS);
 export const setGoals = (goals: Goal[]): void => setStorageData(STORAGE_KEYS.GOALS, goals);
+
+export const getCalendarEvents = (): CalendarEvent[] => {
+  const events = getStorageData<any>(STORAGE_KEYS.CALENDAR_EVENTS);
+  // Convert date strings back to Date objects
+  return events.map(event => ({
+    ...event,
+    start: new Date(event.start),
+    end: new Date(event.end)
+  }));
+};
+
+export const setCalendarEvents = (events: CalendarEvent[]): void => {
+  // Convert Date objects to strings for storage
+  const eventsForStorage = events.map(event => ({
+    ...event,
+    start: event.start.toISOString(),
+    end: event.end.toISOString()
+  }));
+  setStorageData(STORAGE_KEYS.CALENDAR_EVENTS, eventsForStorage);
+};

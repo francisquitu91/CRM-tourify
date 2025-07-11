@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useEffect } from 'react';
 // Importaciones necesarias para react-big-calendar
 import { Calendar, dateFnsLocalizer, EventProps } from 'react-big-calendar';
 import format from 'date-fns/format';
@@ -7,6 +8,8 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import es from 'date-fns/locale/es'; // Importar el locale en español
 import 'react-big-calendar/lib/css/react-big-calendar.css'; // Estilos del calendario
+import { getCalendarEvents, setCalendarEvents } from '../../utils/storage';
+import { CalendarEvent } from '../../types';
 
 // --- Configuración del Localizer para date-fns y en español ---
 const locales = {
@@ -19,19 +22,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
-
-// --- Interfaz para nuestros eventos ---
-// Nota: react-big-calendar necesita 'title', 'start' y 'end'.
-// 'start' y 'end' DEBEN ser objetos Date.
-interface CalendarEvent {
-  id: number;
-  type: 'tarea' | 'ingreso' | 'gasto' | 'reunion';
-  title: string;
-  start: Date;
-  end: Date;
-  description?: string;
-  related?: string;
-}
 
 // --- Componente para personalizar cómo se ve un evento en el calendario ---
 const CustomEvent: React.FC<EventProps<CalendarEvent>> = ({ event }) => {
@@ -54,6 +44,19 @@ const CustomEvent: React.FC<EventProps<CalendarEvent>> = ({ event }) => {
 // --- Componente principal del Calendario ---
 export const CalendarSection: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+
+  // Cargar eventos del localStorage al inicializar
+  useEffect(() => {
+    const savedEvents = getCalendarEvents();
+    setEvents(savedEvents);
+  }, []);
+
+  // Guardar eventos en localStorage cada vez que cambien
+  useEffect(() => {
+    if (events.length > 0 || events.length === 0) { // Siempre guardar, incluso si está vacío
+      setCalendarEvents(events);
+    }
+  }, [events]);
 
   // Estado para controlar el modal de "Añadir/Editar"
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,7 +94,8 @@ export const CalendarSection: React.FC = () => {
 
     if (currentEventData.id) {
       // Actualizar evento existente
-      setEvents(events.map(ev => ev.id === currentEventData.id ? (currentEventData as CalendarEvent) : ev));
+      const updatedEvents = events.map(ev => ev.id === currentEventData.id ? (currentEventData as CalendarEvent) : ev);
+      setEvents(updatedEvents);
     } else {
       // Crear nuevo evento
       const newEvent: CalendarEvent = {
@@ -99,7 +103,8 @@ export const CalendarSection: React.FC = () => {
         id: Date.now(),
         end: currentEventData.end || currentEventData.start, // Asegura que 'end' tenga un valor
       } as CalendarEvent;
-      setEvents([...events, newEvent]);
+      const updatedEvents = [...events, newEvent];
+      setEvents(updatedEvents);
     }
     closeModal();
   };
@@ -108,7 +113,8 @@ export const CalendarSection: React.FC = () => {
   const handleDelete = () => {
     if (currentEventData.id) {
       if (window.confirm(`¿Estás seguro de que quieres eliminar "${currentEventData.title}"?`)) {
-        setEvents(events.filter(ev => ev.id !== currentEventData.id));
+        const updatedEvents = events.filter(ev => ev.id !== currentEventData.id);
+        setEvents(updatedEvents);
         closeModal();
       }
     }

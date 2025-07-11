@@ -57,3 +57,13 @@ export interface Goal {
   completed: boolean;
   createdAt: string;
 }
+
+export interface CalendarEvent {
+  id: number;
+  type: 'tarea' | 'ingreso' | 'gasto' | 'reunion';
+  title: string;
+  start: Date;
+  end: Date;
+  description?: string;
+  related?: string;
+}
