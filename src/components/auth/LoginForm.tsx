@@ -65,61 +65,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             <p className="text-gray-600 dark:text-gray-300">Ingresa para acceder al centro de control</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Usuario
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                placeholder="Ingresa tu usuario"
-                required
-              />
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-6">
+              <p className="text-red-600 dark:text-red-300 text-sm">{error}</p>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors pr-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                  placeholder="Ingresa tu contraseña"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-3">
-                <p className="text-red-600 dark:text-red-300 text-sm">{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-indigo-600 dark:bg-indigo-700 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </button>
-          </form>
-
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 text-center">Acceso rápido:</p>
+          <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
               {[
                 { user: 'gabo', name: 'Gabo', role: 'Sales' },
@@ -129,13 +81,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 <button
                   key={account.user}
                   onClick={() => quickLogin(account.user)}
-                  className="p-3 text-center border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  disabled={isLoading}
+                  className="p-4 text-center border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-800 hover:border-indigo-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{account.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300">{account.role}</div>
+                  <div className="text-lg font-medium text-gray-900 dark:text-white">{account.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-300">{account.role}</div>
                 </button>
               ))}
             </div>
+            
+            {isLoading && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-300">Iniciando sesión...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
