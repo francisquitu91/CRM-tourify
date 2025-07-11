@@ -35,12 +35,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   };
 
   const quickLogin = async (user: string) => {
-    setUsername(user);
-    setPassword('123');
-    // Esperar a que el estado se actualice antes de enviar
-    setTimeout(() => {
-      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-    }, 0);
+    setIsLoading(true);
+    setError('');
+    
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const authenticatedUser = authenticateUser(user, '123');
+    
+    if (authenticatedUser) {
+      setCurrentUser(authenticatedUser);
+      onLogin(authenticatedUser);
+    } else {
+      setError('Usuario o contraseña incorrectos');
+    }
+    
+    setIsLoading(false);
   };
 
   return (
