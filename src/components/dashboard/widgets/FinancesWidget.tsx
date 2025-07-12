@@ -1,9 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { getTransactions } from '../../../utils/storage';
+import { Transaction } from '../../../types';
 
 export const FinancesWidget: React.FC = () => {
-  const transactions = getTransactions();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const data = await getTransactions();
+        setTransactions(data);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
@@ -30,6 +48,24 @@ export const FinancesWidget: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Finanzas del Mes</h3>
+          <DollarSign className="w-5 h-5 text-gray-400" />
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-20 bg-gray-200 rounded-lg"></div>
+            <div className="h-20 bg-gray-200 rounded-lg"></div>
+          </div>
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

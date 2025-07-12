@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Target } from 'lucide-react';
 import { getTransactions } from '../../../utils/storage';
 import { MONTHLY_TARGET } from '../../../utils/constants';
+import { Transaction } from '../../../types';
 
 export const ProgressWidget: React.FC = () => {
-  const transactions = getTransactions();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const data = await getTransactions();
+        setTransactions(data);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   
@@ -32,6 +50,29 @@ export const ProgressWidget: React.FC = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-1">Meta Mensual</h3>
+            <p className="text-indigo-100">Cargando progreso...</p>
+          </div>
+          <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+            <Target className="w-6 h-6 animate-spin" />
+          </div>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="w-full bg-white bg-opacity-20 rounded-full h-3"></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-16 bg-white bg-opacity-10 rounded-lg"></div>
+            <div className="h-16 bg-white bg-opacity-10 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
