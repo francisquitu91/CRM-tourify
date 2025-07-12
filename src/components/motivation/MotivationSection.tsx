@@ -7,8 +7,40 @@ export const MotivationSection: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [currentQuote, setCurrentQuote] = useState('');
   const [achievements, setAchievements] = useState<string[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [prospects, setProspects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [transactionsData, tasksData, goalsData, prospectsData] = await Promise.all([
+          getTransactions(),
+          getTasks(),
+          getGoals(),
+          getProspects()
+        ]);
+        
+        setTransactions(transactionsData);
+        setTasks(tasksData);
+        setGoals(goalsData);
+        setProspects(prospectsData);
+        
+        // Calculate achievements with loaded data
+        calculateAchievements(transactionsData, tasksData, goalsData, prospectsData);
+      } catch (error) {
+        console.error('Error loading motivation data:', error);
+        setTransactions([]);
+        setTasks([]);
+        setGoals([]);
+        setProspects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     // Set random quote
     const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     setCurrentQuote(randomQuote);
@@ -34,22 +66,17 @@ export const MotivationSection: React.FC = () => {
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
 
-    // Calculate achievements
-    calculateAchievements();
+    // Load data
+    loadData();
 
     return () => clearInterval(interval);
   }, []);
 
-  const calculateAchievements = () => {
-    const transactions = getTransactions();
-    const tasks = getTasks();
-    const goals = getGoals();
-    const prospects = getProspects();
-    
+  const calculateAchievements = (transactionsData: any[], tasksData: any[], goalsData: any[], prospectsData: any[]) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     
-    const monthlyTransactions = transactions.filter(t => {
+    const monthlyTransactions = transactionsData.filter(t => {
       const transactionDate = new Date(t.date);
       return transactionDate.getMonth() === currentMonth && 
              transactionDate.getFullYear() === currentYear;
@@ -59,9 +86,9 @@ export const MotivationSection: React.FC = () => {
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const completedTasks = tasks.filter(t => t.completed).length;
-    const completedGoals = goals.filter(g => g.completed).length;
-    const wonProspects = prospects.filter(p => p.status === 'Ganado').length;
+    const completedTasks = tasksData.filter(t => t.completed).length;
+    const completedGoals = goalsData.filter(g => g.completed).length;
+    const wonProspects = prospectsData.filter(p => p.status === 'Ganado').length;
     
     const newAchievements: string[] = [];
     
@@ -85,7 +112,7 @@ export const MotivationSection: React.FC = () => {
       newAchievements.push('🎉 5+ prospectos ganados');
     }
     
-    if (prospects.length >= 20) {
+    if (prospectsData.length >= 20) {
       newAchievements.push('📈 20+ prospectos registrados');
     }
     
@@ -93,11 +120,6 @@ export const MotivationSection: React.FC = () => {
   };
 
   const getStats = () => {
-    const transactions = getTransactions();
-    const tasks = getTasks();
-    const goals = getGoals();
-    const prospects = getProspects();
-    
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     
@@ -130,6 +152,24 @@ export const MotivationSection: React.FC = () => {
     };
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel Motivacional 🚀</h1>
+          <p className="text-gray-600">Cargando datos...</p>
+        </div>
+        <div className="animate-pulse space-y-6">
+          <div className="bg-gray-200 rounded-2xl h-48"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-gray-200 rounded-xl h-32"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',

@@ -16,9 +16,19 @@ export const FinancesSection: React.FC = () => {
   const [monthFilter, setMonthFilter] = useState('');
 
   useEffect(() => {
-    const loadedTransactions = getTransactions();
-    setTransactionsState(loadedTransactions);
-    setFilteredTransactions(loadedTransactions);
+    const loadTransactions = async () => {
+      try {
+        const loadedTransactions = await getTransactions();
+        setTransactionsState(loadedTransactions);
+        setFilteredTransactions(loadedTransactions);
+      } catch (error) {
+        console.error('Error loading transactions:', error);
+        setTransactionsState([]);
+        setFilteredTransactions([]);
+      }
+    };
+    
+    loadTransactions();
   }, []);
 
   useEffect(() => {
@@ -43,33 +53,44 @@ export const FinancesSection: React.FC = () => {
   }, [transactions, typeFilter, categoryFilter, monthFilter]);
 
   const handleSaveTransaction = (transactionData: Omit<Transaction, 'id' | 'createdAt'>) => {
+    const saveTransaction = async () => {
+      try {
     if (editingTransaction) {
-      const updatedTransactions = transactions.map(t => 
-        t.id === editingTransaction.id 
-          ? { ...transactionData, id: editingTransaction.id, createdAt: editingTransaction.createdAt }
-          : t
-      );
-      setTransactionsState(updatedTransactions);
-      setTransactions(updatedTransactions);
+          await updateTransaction(editingTransaction.id, transactionData);
     } else {
-      const newTransaction: Transaction = {
-        ...transactionData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      const updatedTransactions = [...transactions, newTransaction];
-      setTransactionsState(updatedTransactions);
-      setTransactions(updatedTransactions);
+          await addTransaction(transactionData);
     }
+        
+        // Reload transactions after save
+        const updatedTransactions = await getTransactions();
+        setTransactionsState(updatedTransactions);
+        setFilteredTransactions(updatedTransactions);
+      } catch (error) {
+        console.error('Error saving transaction:', error);
+      }
+    };
+    
+    saveTransaction();
     setShowForm(false);
     setEditingTransaction(null);
   };
 
   const handleDeleteTransaction = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta transacción?')) {
-      const updatedTransactions = transactions.filter(t => t.id !== id);
-      setTransactionsState(updatedTransactions);
-      setTransactions(updatedTransactions);
+      const deleteTransactionAsync = async () => {
+        try {
+          await deleteTransaction(id);
+          
+          // Reload transactions after delete
+          const updatedTransactions = await getTransactions();
+          setTransactionsState(updatedTransactions);
+          setFilteredTransactions(updatedTransactions);
+        } catch (error) {
+          console.error('Error deleting transaction:', error);
+        }
+      };
+      
+      deleteTransactionAsync();
     }
   };
 

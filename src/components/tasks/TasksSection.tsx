@@ -25,11 +25,24 @@ export const TasksSection: React.FC<TasksSectionProps> = ({ user }) => {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   useEffect(() => {
-    const loadedTasks = getTasks();
-    const loadedGoals = getGoals();
-    setTasksState(loadedTasks);
-    setGoalsState(loadedGoals);
-    setFilteredTasks(loadedTasks);
+    const loadData = async () => {
+      try {
+        const [loadedTasks, loadedGoals] = await Promise.all([
+          getTasks(),
+          getGoals()
+        ]);
+        setTasksState(loadedTasks);
+        setGoalsState(loadedGoals);
+        setFilteredTasks(loadedTasks);
+      } catch (error) {
+        console.error('Error loading tasks and goals:', error);
+        setTasksState([]);
+        setGoalsState([]);
+        setFilteredTasks([]);
+      }
+    };
+    
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -60,81 +73,124 @@ export const TasksSection: React.FC<TasksSectionProps> = ({ user }) => {
   }, [tasks, searchTerm, statusFilter, assignedFilter, priorityFilter]);
 
   const handleSaveTask = (taskData: Omit<Task, 'id' | 'createdAt'>) => {
+    const saveTask = async () => {
+      try {
     if (editingTask) {
-      const updatedTasks = tasks.map(t => 
-        t.id === editingTask.id 
-          ? { ...taskData, id: editingTask.id, createdAt: editingTask.createdAt }
-          : t
-      );
-      setTasksState(updatedTasks);
-      setTasks(updatedTasks);
+          await updateTask(editingTask.id, taskData);
     } else {
-      const newTask: Task = {
-        ...taskData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      const updatedTasks = [...tasks, newTask];
-      setTasksState(updatedTasks);
-      setTasks(updatedTasks);
+          await addTask(taskData);
     }
+        
+        // Reload tasks after save
+        const updatedTasks = await getTasks();
+        setTasksState(updatedTasks);
+        setFilteredTasks(updatedTasks);
+      } catch (error) {
+        console.error('Error saving task:', error);
+      }
+    };
+    
+    saveTask();
     setShowTaskForm(false);
     setEditingTask(null);
   };
 
   const handleSaveGoal = (goalData: Omit<Goal, 'id' | 'createdAt'>) => {
+    const saveGoal = async () => {
+      try {
     if (editingGoal) {
-      const updatedGoals = goals.map(g => 
-        g.id === editingGoal.id 
-          ? { ...goalData, id: editingGoal.id, createdAt: editingGoal.createdAt }
-          : g
-      );
-      setGoalsState(updatedGoals);
-      setGoals(updatedGoals);
+          await updateGoal(editingGoal.id, goalData);
     } else {
-      const newGoal: Goal = {
-        ...goalData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      const updatedGoals = [...goals, newGoal];
-      setGoalsState(updatedGoals);
-      setGoals(updatedGoals);
+          await addGoal(goalData);
     }
+        
+        // Reload goals after save
+        const updatedGoals = await getGoals();
+        setGoalsState(updatedGoals);
+      } catch (error) {
+        console.error('Error saving goal:', error);
+      }
+    };
+    
+    saveGoal();
     setShowGoalForm(false);
     setEditingGoal(null);
   };
 
   const handleDeleteTask = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
-      const updatedTasks = tasks.filter(t => t.id !== id);
-      setTasksState(updatedTasks);
-      setTasks(updatedTasks);
+      const deleteTaskAsync = async () => {
+        try {
+          await deleteTask(id);
+          
+          // Reload tasks after delete
+          const updatedTasks = await getTasks();
+          setTasksState(updatedTasks);
+          setFilteredTasks(updatedTasks);
+        } catch (error) {
+          console.error('Error deleting task:', error);
+        }
+      };
+      
+      deleteTaskAsync();
     }
   };
 
   const handleDeleteGoal = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta meta?')) {
-      const updatedGoals = goals.filter(g => g.id !== id);
-      setGoalsState(updatedGoals);
-      setGoals(updatedGoals);
+      const deleteGoalAsync = async () => {
+        try {
+          await deleteGoal(id);
+          
+          // Reload goals after delete
+          const updatedGoals = await getGoals();
+          setGoalsState(updatedGoals);
+        } catch (error) {
+          console.error('Error deleting goal:', error);
+        }
+      };
+      
+      deleteGoalAsync();
     }
   };
 
   const toggleTaskCompletion = (id: string) => {
-    const updatedTasks = tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    setTasksState(updatedTasks);
-    setTasks(updatedTasks);
+    const toggleTask = async () => {
+      try {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+          await updateTask(id, { ...task, completed: !task.completed });
+          
+          // Reload tasks after update
+          const updatedTasks = await getTasks();
+          setTasksState(updatedTasks);
+          setFilteredTasks(updatedTasks);
+        }
+      } catch (error) {
+        console.error('Error toggling task completion:', error);
+      }
+    };
+    
+    toggleTask();
   };
 
   const toggleGoalCompletion = (id: string) => {
-    const updatedGoals = goals.map(goal => 
-      goal.id === id ? { ...goal, completed: !goal.completed } : goal
-    );
-    setGoalsState(updatedGoals);
-    setGoals(updatedGoals);
+    const toggleGoal = async () => {
+      try {
+        const goal = goals.find(g => g.id === id);
+        if (goal) {
+          await updateGoal(id, { ...goal, completed: !goal.completed });
+          
+          // Reload goals after update
+          const updatedGoals = await getGoals();
+          setGoalsState(updatedGoals);
+        }
+      } catch (error) {
+        console.error('Error toggling goal completion:', error);
+      }
+    };
+    
+    toggleGoal();
   };
 
   const getPriorityColor = (priority: string) => {

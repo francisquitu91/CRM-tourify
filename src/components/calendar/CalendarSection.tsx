@@ -47,16 +47,18 @@ export const CalendarSection: React.FC = () => {
 
   // Cargar eventos del localStorage al inicializar
   useEffect(() => {
-    const savedEvents = getCalendarEvents();
-    setEvents(savedEvents);
+    const loadEvents = async () => {
+      try {
+        const savedEvents = await getCalendarEvents();
+        setEvents(savedEvents);
+      } catch (error) {
+        console.error('Error loading calendar events:', error);
+        setEvents([]);
+      }
+    };
+    
+    loadEvents();
   }, []);
-
-  // Guardar eventos en localStorage cada vez que cambien
-  useEffect(() => {
-    if (events.length > 0 || events.length === 0) { // Siempre guardar, incluso si está vacío
-      setCalendarEvents(events);
-    }
-  }, [events]);
 
   // Estado para controlar el modal de "Añadir/Editar"
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,22 +92,30 @@ export const CalendarSection: React.FC = () => {
 
   // Guarda el evento (crea uno nuevo o actualiza uno existente)
   const handleSave = () => {
+    const saveEvent = async () => {
+      try {
     if (!currentEventData.title || !currentEventData.start) return;
 
     if (currentEventData.id) {
-      // Actualizar evento existente
-      const updatedEvents = events.map(ev => ev.id === currentEventData.id ? (currentEventData as CalendarEvent) : ev);
-      setEvents(updatedEvents);
+          // Actualizar evento existente
+          await updateCalendarEvent(currentEventData.id, currentEventData);
     } else {
-      // Crear nuevo evento
-      const newEvent: CalendarEvent = {
-        ...currentEventData,
-        id: Date.now(),
-        end: currentEventData.end || currentEventData.start, // Asegura que 'end' tenga un valor
-      } as CalendarEvent;
-      const updatedEvents = [...events, newEvent];
-      setEvents(updatedEvents);
+          // Crear nuevo evento
+          await addCalendarEvent({
+            ...currentEventData,
+            end: currentEventData.end || currentEventData.start,
+          } as Omit<CalendarEvent, 'id' | 'createdAt'>);
     }
+        
+        // Reload events after save
+        const updatedEvents = await getCalendarEvents();
+        setEvents(updatedEvents);
+      } catch (error) {
+        console.error('Error saving calendar event:', error);
+      }
+    };
+    
+    saveEvent();
     closeModal();
   };
 
@@ -113,8 +123,19 @@ export const CalendarSection: React.FC = () => {
   const handleDelete = () => {
     if (currentEventData.id) {
       if (window.confirm(`¿Estás seguro de que quieres eliminar "${currentEventData.title}"?`)) {
-        const updatedEvents = events.filter(ev => ev.id !== currentEventData.id);
-        setEvents(updatedEvents);
+        const deleteEvent = async () => {
+          try {
+            await deleteCalendarEvent(currentEventData.id!);
+            
+            // Reload events after delete
+            const updatedEvents = await getCalendarEvents();
+            setEvents(updatedEvents);
+          } catch (error) {
+            console.error('Error deleting calendar event:', error);
+          }
+        };
+        
+        deleteEvent();
         closeModal();
       }
     }

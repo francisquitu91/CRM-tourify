@@ -15,9 +15,19 @@ export const ScriptsSection: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadedScripts = getSalesScripts();
-    setScriptsState(loadedScripts);
-    setFilteredScripts(loadedScripts);
+    const loadScripts = async () => {
+      try {
+        const loadedScripts = await getSalesScripts();
+        setScriptsState(loadedScripts);
+        setFilteredScripts(loadedScripts);
+      } catch (error) {
+        console.error('Error loading scripts:', error);
+        setScriptsState([]);
+        setFilteredScripts([]);
+      }
+    };
+    
+    loadScripts();
   }, []);
 
   useEffect(() => {
@@ -38,33 +48,44 @@ export const ScriptsSection: React.FC = () => {
   }, [scripts, searchTerm, clientTypeFilter]);
 
   const handleSaveScript = (scriptData: Omit<SalesScript, 'id' | 'createdAt'>) => {
+    const saveScript = async () => {
+      try {
     if (editingScript) {
-      const updatedScripts = scripts.map(s => 
-        s.id === editingScript.id 
-          ? { ...scriptData, id: editingScript.id, createdAt: editingScript.createdAt }
-          : s
-      );
-      setScriptsState(updatedScripts);
-      setSalesScripts(updatedScripts);
+          await updateSalesScript(editingScript.id, scriptData);
     } else {
-      const newScript: SalesScript = {
-        ...scriptData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      const updatedScripts = [...scripts, newScript];
-      setScriptsState(updatedScripts);
-      setSalesScripts(updatedScripts);
+          await addSalesScript(scriptData);
     }
+        
+        // Reload scripts after save
+        const updatedScripts = await getSalesScripts();
+        setScriptsState(updatedScripts);
+        setFilteredScripts(updatedScripts);
+      } catch (error) {
+        console.error('Error saving script:', error);
+      }
+    };
+    
+    saveScript();
     setShowForm(false);
     setEditingScript(null);
   };
 
   const handleDeleteScript = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este script?')) {
-      const updatedScripts = scripts.filter(s => s.id !== id);
-      setScriptsState(updatedScripts);
-      setSalesScripts(updatedScripts);
+      const deleteScript = async () => {
+        try {
+          await deleteSalesScript(id);
+          
+          // Reload scripts after delete
+          const updatedScripts = await getSalesScripts();
+          setScriptsState(updatedScripts);
+          setFilteredScripts(updatedScripts);
+        } catch (error) {
+          console.error('Error deleting script:', error);
+        }
+      };
+      
+      deleteScript();
     }
   };
 
