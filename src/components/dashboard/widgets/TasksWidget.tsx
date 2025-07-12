@@ -8,14 +8,35 @@ interface TasksWidgetProps {
 }
 
 export const TasksWidget: React.FC<TasksWidgetProps> = ({ user }) => {
-  const tasks = getTasks();
-  const userTasks = tasks
-    .filter(task => task.assignedTo === user.name && !task.completed)
-    .sort((a, b) => {
-      const priorityOrder = { high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
-    })
-    .slice(0, 3);
+  const [tasks, setTasks] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const fetchedTasks = await getTasks();
+        setTasks(fetchedTasks);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        setTasks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  const userTasks = React.useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
+    return tasks
+      .filter(task => task.assignedTo === user.name && !task.completed)
+      .sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      })
+      .slice(0, 3);
+  }, [tasks, user.name]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -42,7 +63,20 @@ export const TasksWidget: React.FC<TasksWidgetProps> = ({ user }) => {
         <CheckSquare className="w-5 h-5 text-gray-400" />
       </div>
       
-      {userTasks.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-4 bg-gray-50 rounded-lg animate-pulse">
+              <div className="flex items-start justify-between mb-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+              </div>
+              <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+            </div>
+          ))}
+        </div>
+      ) : userTasks.length === 0 ? (
         <div className="text-center py-8">
           <CheckSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">¡Excelente! No tienes tareas pendientes</p>

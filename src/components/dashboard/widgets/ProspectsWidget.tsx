@@ -3,10 +3,31 @@ import { Users, TrendingUp } from 'lucide-react';
 import { getProspects } from '../../../utils/storage';
 
 export const ProspectsWidget: React.FC = () => {
-  const prospects = getProspects();
-  const recentProspects = prospects
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const [prospects, setProspects] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchProspects = async () => {
+      try {
+        const fetchedProspects = await getProspects();
+        setProspects(fetchedProspects);
+      } catch (error) {
+        console.error('Error fetching prospects:', error);
+        setProspects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProspects();
+  }, []);
+
+  const recentProspects = React.useMemo(() => {
+    if (!Array.isArray(prospects)) return [];
+    return prospects
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [prospects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -27,7 +48,22 @@ export const ProspectsWidget: React.FC = () => {
         <Users className="w-5 h-5 text-gray-400" />
       </div>
       
-      {recentProspects.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg animate-pulse">
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+              <div className="ml-3 flex-shrink-0">
+                <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : recentProspects.length === 0 ? (
         <div className="text-center py-8">
           <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">No hay prospectos registrados</p>
